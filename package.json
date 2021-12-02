@@ -1,11 +1,11 @@
 {
-  "name": "es6module",
-  "version": "0.1.0",
-  "description": "A starting point to create ES6 module for browser",
-  "repository": "jonathanlurie/es6module",
-  "main": "dist/es6module.cjs.js",
-  "module": "dist/es6module.es.js",
-  "browser": "dist/es6module.umd.js",
+  "name": "timezoneturbo",
+  "version": "1.0.0",
+  "description": "A boosted, lightweight, whole-globe, high precision, spatial lookup for timezone and local time (plus ☀️ 🌙)",
+  "repository": "jonathanlurie/timezoneturbo",
+  "main": "dist/timezoneturbo.cjs.js",
+  "module": "dist/timezoneturbo.es.js",
+  "browser": "dist/timezoneturbo.umd.js",
   "entry": "src/index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
@@ -29,8 +29,8 @@
     "rollup-plugin-node-globals": "^1.4.0",
     "rollup-plugin-node-resolve": "^3.4.0",
     "rollup-plugin-terser": "^5.3.0",
-    "rollup-plugin-webworkify": "0.0.4",
-    "serve": "^11.3.0"
+    "serve": "^11.3.0",
+    "@rollup/plugin-json": "^4.1.0"
   },
   "eslintConfig": {
     "extends": "eslint-config-airbnb-base",
@@ -58,5 +58,9 @@
         "warn"
       ]
     }
+  },
+  "dependencies": {
+    "robust-point-in-polygon": "^1.0.3",
+    "suncalc": "^1.8.0"
   }
 }

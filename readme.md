@@ -1,116 +1,126 @@
-[WIP experimental support for WebWorkers]
+![](images/logo_1000.png)
 
-# What is es6module ?
-This is a starting point for a JS library (not a frontend framework-based thing)
-It's a simple module architecture using [Rollup](http://rollupjs.org) to bundle the code in one single source file. There will be three output bundles, in three directories:
-- `dist`, with a **umd** bundle and its *minified* equivalent (bundles with dependencies if there is any)
-- `lib`, with a **commonjs** bundle, mostly for Node usage (does not bundle with dependencies)
-- `es`, with a **es module** bundle, mostly for ES usage (does not bundle with dependencies)
+# What's TimezoneTurbo?
+It's a fast geographical lookup of timezones for clientside purpose. The package is about 4MB, which may seem fairly large but it includes high precision encoded polygons of every single timezone on Earth!
 
-None of these is transpiled into *ES5* and this package does not use Babel.
+TimezoneTurbo lookup is fast (usually less than 3ms per lookup) and gives you extra information about the local coordinates:
+- Time zone ID
+- nicely formated local datetime
+- local datetime for sunset/sunrise and more for the default day (default: current day), the day before and the day after
+- moon informations for the default day (default: current day), the day before and the day after
 
-Code documentation can also be generated thanks to [Documentation.js](http://documentation.js.org/) that uses the [JSDoc](http://usejsdoc.org/) syntax.
-
-## Using es6module as a base
-**es6module** is not made to be used as-is, but rather to be a starting-point/boilerplate to make your own module. Here is the list of things to change to make it yours:
-
-The entry-point of the module is `src/index.js`, of course, you should rename this file with the name of your choice.
-
-In `package.json` file, look for the string `es6module` and change all its occurrence with the name of your choice. The file `rollup.config.js` does not need any edits because it uses variables from `package.json`.
-
-Some usage examples are provided in the `examples/` folder.
-
-# Dev mode
-```bash
-$ npm run dev
+# Install
 ```
-Does:
-- watches for source modifications
-- makes all except the minified umd bundle
-- serves on a `http://localhost:PORT/` where `PORT` is a random number in [3000, 6000]. This is copied into the clipboard
-
-# Build your module
-Using Rollup from the script:  
-```bash
-$ npm run build
-```
-This builds all the 4 outputs.
-
-# Lint
-Es6modules uses eslint and the set of rules defined by [Airbnb](https://github.com/airbnb/javascript) + some minor adjustments.  
-Run the linter to simply display errors and warnings:
-```bash
-$ npm run lint
+npm install timezoneturbo
 ```
 
-To fix:
-```bash
-$ npm run lint -- --fix
-```
 
-# How to use my module?
-The advantage of the *umd* package specification is that it's compatible everywhere: Node, Browser and ES6 import.
-
-From HTML:
-```html
-<script src="../dist/es6module.js"></script>
-<!-- Or with the minified bundle -->
-<script src="../dist/es6module.min.js"></script>
-```
-
-From Node:
+# Usage
 ```js
-const es6module = require("es6module");
+import { getLocalTimeInfo } from 'timezoneturbo'
+
+// WGS84 coordinates
+const coordinates = [
+  1.7999,  // longitude
+  46.4400, // latitude
+]
+
+const info = getLocalTimeInfo(coordinates)
 ```
 
-From ES6:
-```js
-import es6module from 'es6module';
-```
-
-Then, no matter your setup, you can use *es6module* the same way:
-```js
-var foo = new es6module.Foo(20, 30);
-
-// do something with foo
-foo.printAnAttribute();
-foo.setAnAttribute(34)
-foo.printAnAttribute();
-```
-
-# Documentation
-Even if you code only for yourself, a bit of documentation can not hurt :) .  
-Use the [JSDoc](http://usejsdoc.org/) syntax and then run:  
-```bash
-$ npm run doc
-```
-Two kinds of documentations will be generated: a HTML kind in `doc/` ([here](http://me.jonathanlurie.fr/es6module/doc/)) and a markdown kind in `./documentation.md` ([here](https://github.com/jonathanlurie/es6module/blob/master/documentation.md)).
-
-# Extra
-Since I clone this repo a lot and use it as a start for almost every new project, I've decided to create a script to:
-- clone (with depth=1)
-- remove the `.git` folder
-- remove files and folder that are going to be replaced anyway (doc, dist bundles)
-- replace the every "es6module" by "mynewfancymodule"
-- removes readme's content
-- run `npm install`
-
-```bash
-function es6module(){
-  git clone --depth=1 --branch=master https://github.com/jonathanlurie/es6module.git  $1
-  cd $1
-  rm -rf .git
-  rm -rf dist/* documentation.md doc/* package-lock.json
-  find . -type f -iname '*' -exec sed -i '' "s/es6module/$1/g" "{}" +;
-  printf "# $1\n[here goes the readme]\n" > readme.md
-  npm install
+```json
+{
+    "lonLat": [
+        1.7999,
+        46.44
+    ],
+    "timezone": "Europe/Paris",
+    "unixTimestamp": 1638438658.725,
+    "localTime": "02/12/2021, 10:50:58 CET",
+    "sun": {
+        "previousDay": {
+            "solarNoon": "01/12/2021, 12:43:21 CET",
+            "nadir": "01/12/2021, 00:43:21 CET",
+            "sunrise": "01/12/2021, 08:17:14 CET",
+            "sunset": "01/12/2021, 17:09:27 CET",
+            "sunriseEnd": "01/12/2021, 08:20:53 CET",
+            "sunsetStart": "01/12/2021, 17:05:49 CET",
+            "dawn": "01/12/2021, 07:43:04 CET",
+            "dusk": "01/12/2021, 17:43:37 CET",
+            "nauticalDawn": "01/12/2021, 07:05:24 CET",
+            "nauticalDusk": "01/12/2021, 18:21:18 CET",
+            "nightEnd": "01/12/2021, 06:29:08 CET",
+            "night": "01/12/2021, 18:57:34 CET",
+            "goldenHourEnd": "01/12/2021, 09:06:24 CET",
+            "goldenHour": "01/12/2021, 16:20:18 CET"
+        },
+        "currentDay": {
+            "solarNoon": "02/12/2021, 12:43:43 CET",
+            "nadir": "02/12/2021, 00:43:43 CET",
+            "sunrise": "02/12/2021, 08:18:25 CET",
+            "sunset": "02/12/2021, 17:09:02 CET",
+            "sunriseEnd": "02/12/2021, 08:22:04 CET",
+            "sunsetStart": "02/12/2021, 17:05:23 CET",
+            "dawn": "02/12/2021, 07:44:10 CET",
+            "dusk": "02/12/2021, 17:43:17 CET",
+            "nauticalDawn": "02/12/2021, 07:06:26 CET",
+            "nauticalDusk": "02/12/2021, 18:21:01 CET",
+            "nightEnd": "02/12/2021, 06:30:08 CET",
+            "night": "02/12/2021, 18:57:19 CET",
+            "goldenHourEnd": "02/12/2021, 09:07:44 CET",
+            "goldenHour": "02/12/2021, 16:19:43 CET"
+        },
+        "nextDay": {
+            "solarNoon": "2021-12-03T11:44:07.188Z",
+            "nadir": "2021-12-02T23:44:07.188Z",
+            "sunrise": "2021-12-03T07:19:34.635Z",
+            "sunset": "2021-12-03T16:08:39.742Z",
+            "sunriseEnd": "2021-12-03T07:23:14.515Z",
+            "sunsetStart": "2021-12-03T16:04:59.861Z",
+            "dawn": "2021-12-03T06:45:15.477Z",
+            "dusk": "2021-12-03T16:42:58.899Z",
+            "nauticalDawn": "2021-12-03T06:07:27.730Z",
+            "nauticalDusk": "2021-12-03T17:20:46.647Z",
+            "nightEnd": "2021-12-03T05:31:07.142Z",
+            "night": "2021-12-03T17:57:07.234Z",
+            "goldenHourEnd": "2021-12-03T08:09:03.230Z",
+            "goldenHour": "2021-12-03T15:19:11.146Z"
+        }
+    },
+    "moon": {
+        "previousDay": {
+            "rise": "01/12/2021, 04:26:42 CET",
+            "set": "01/12/2021, 15:34:01 CET",
+            "fraction": 0.11216735733893929,
+            "phase": 0.8912927461847269,
+            "angle": 1.977246527181093,
+            "azimuth": 0.22200012656706536,
+            "altitude": 0.5837848857390256,
+            "distance": 369209.1159353532,
+            "parallacticAngle": 0.15437045376015637
+        },
+        "currentDay": {
+            "rise": "02/12/2021, 05:46:13 CET",
+            "set": "02/12/2021, 16:00:50 CET",
+            "fraction": 0.04958154730639297,
+            "phase": 0.9285230380532703,
+            "angle": 1.9135781510124055,
+            "azimuth": -0.03482619388514546,
+            "altitude": 0.4985819896170114,
+            "distance": 366521.38110429654,
+            "parallacticAngle": -0.024843629645853
+        },
+        "nextDay": {
+            "rise": "03/12/2021, 07:07:00 CET",
+            "set": "03/12/2021, 16:32:04 CET",
+            "fraction": 0.011251859108405593,
+            "phase": 0.9661717066630712,
+            "angle": 1.7945428235210732,
+            "azimuth": -0.2699533100117872,
+            "altitude": 0.3893975411718424,
+            "distance": 364790.3632504633,
+            "parallacticAngle": -0.19668434807430024
+        }
+    }
 }
 ```
-
-Copy the script to the `.bashrc` and to run it:
-```bash
-es6module mynewfancymodule
-```
-
-# TODO
-- Add a testing framework

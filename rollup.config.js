@@ -3,13 +3,14 @@ import resolve from '@rollup/plugin-node-resolve'
 import builtins from 'rollup-plugin-node-builtins'
 import globals from 'rollup-plugin-node-globals'
 import commonjs from '@rollup/plugin-commonjs'
-import webworkify from 'rollup-plugin-webworkify'
+import json from '@rollup/plugin-json'
 import pkg from './package.json'
 
 // deals with package names like '@user/package'
 // so that the package name is 'package' and not '@user/package'
 let packageName = pkg.name
-if(~packageName.indexOf('/')){
+// eslint-disable-next-line no-bitwise
+if (~packageName.indexOf('/')) {
   packageName = packageName.split('/')[1]
 }
 
@@ -24,11 +25,11 @@ const configurations = [
       format: 'umd',
     },
     plugins: [
+      json(),
       resolve(),
       commonjs({ include: 'node_modules/**' }),
       globals(),
       builtins(),
-      webworkify({ pattern: '**/*.worker.js' }),
     ],
   },
 
@@ -45,11 +46,11 @@ const configurations = [
       ...Object.keys(pkg.dependencies || {}),
     ],
     plugins: [
+      json(),
       resolve(),
       commonjs({ include: 'node_modules/**' }),
       globals(),
       builtins(),
-      webworkify({ pattern: '**/*.worker.js' }),
     ],
   },
 
@@ -68,11 +69,11 @@ const configurations = [
     ],
 
     plugins: [
+      json(),
       resolve(),
       commonjs({ include: 'node_modules/**' }),
       globals(),
       builtins(),
-      // webworkify({ pattern: '**/*.worker.js' }),
     ],
   },
 
@@ -91,11 +92,11 @@ if (process.env.NODE_ENV === 'production') {
         format: 'umd',
       },
       plugins: [
+        json(),
         resolve(),
         commonjs({ include: 'node_modules/**' }),
         globals(),
         builtins(),
-        webworkify({ pattern: '**/*.worker.js' }),
         terser()],
     })
 }
