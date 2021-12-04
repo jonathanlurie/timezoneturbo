@@ -158,10 +158,8 @@
       const payloadContainer = document.getElementById('payloadContainer')
       const mapRes = await fetch('countries-land-10km.geo.json')
       const mapTopo = await mapRes.json()
-      console.log(mapTopo);
 
       const geojsonCountries = mapTopo // topojson.feature(mapTopo, mapTopo.objects.countries)
-      console.log(geojsonCountries)
 
       // drawing the polygons
       const width = 1000
@@ -175,6 +173,10 @@
       canvas.setAttribute('style', `background-color: ${background};`)
       canvas.setAttribute('viewBox', `0 0 ${width} ${height}`)
       mapContainer.appendChild(canvas)
+
+      let debugGroup = document.createElementNS(SVG_NAMESPACE, 'g')
+      canvas.appendChild(debugGroup)
+      console.log(debugGroup);
 
       for (let i = 0; i < geojsonCountries.features.length; i += 1) {
         const country = geojsonCountries.features[i]
@@ -216,15 +218,68 @@
         }
       }
 
+
+      let lonLat = null
+
+
+      canvas.addEventListener('mousedown', async (evt) => {
+
+        canvas.removeChild(debugGroup)
+        debugGroup = document.createElementNS(SVG_NAMESPACE, 'g')
+        canvas.appendChild(debugGroup)
+
+        // console.log(evt);
+        const tzInfo = timezoneturbo.getLocalTimeInfo(lonLat, { debug: true })
+
+        if (!tzInfo) {
+          return
+        }
+
+
+
+        console.log(tzInfo)
+        const timezonePolygon = tzInfo.timezonePolygon
+        const nodeList = [timezonePolygon.parentNode]
+        let movingNode = timezonePolygon.parentNode
+
+        while (movingNode.parent) {
+          nodeList.push(movingNode.parent)
+          movingNode = movingNode.parent
+        }
+
+        const boxes = nodeList.forEach((n, i)=> {
+          const box = n.b
+          const boxCoords = equirectangularProjectionForward([
+            [box[0][0], box[0][1]],
+            [box[1][0], box[0][1]],
+            [box[1][0], box[1][1]],
+            [box[0][0], box[1][1]],
+          ])
+
+          const p = polygon(boxCoords, {
+              fillColor: '#00000000',
+              strokeWidth: i,
+              strokeColor: '#FF000044',
+            })
+
+          debugGroup.appendChild(p)
+        })
+        console.log(boxes)
+      })
+
+
       canvas.addEventListener('mousemove', async (evt) => {
         // console.log(evt);
         const x = (evt.layerX / canvas.clientWidth) * width
         const y = (evt.layerY / canvas.clientHeight) * height
-        const lonLat = equirectangularProjectionReverse([x, y])
+        lonLat = equirectangularProjectionReverse([x, y])
         const t0 = performance.now()
         const tzInfo = timezoneturbo.getLocalTimeInfo(lonLat)
         const t1 = performance.now()
 
+        if (!tzInfo) {
+          return
+        }
         payloadContainer.value = JSON.stringify(tzInfo, null, 2)
       })
     }

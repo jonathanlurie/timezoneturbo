@@ -59,15 +59,17 @@ function hitBvh(point) {
     && point[1] >= box[0][1] && point[1] <= box[1][1]
   }
 
-  function h(b) {
-    if (b.l && isInsideBox(b.l.b)) {
-      hitBoxes.push(b.l)
-      h(b.l)
+  function h(node) {
+    if (node.l && isInsideBox(node.l.b)) {
+      node.l.parent = node
+      hitBoxes.push(node.l)
+      h(node.l)
     }
 
-    if (b.r && isInsideBox(b.r.b)) {
-      hitBoxes.push(b.r)
-      h(b.r)
+    if (node.r && isInsideBox(node.r.b)) {
+      node.r.parent = node
+      hitBoxes.push(node.r)
+      h(node.r)
     }
   }
 
@@ -82,6 +84,7 @@ function hitBvh(point) {
     const polygonList = leaves[b].p
     for (let p = 0; p < polygonList.length; p += 1) {
       const pol = polygonList[p]
+      pol.parentNode = leaves[b]
       const polAABB = pol.b
 
       if (point[0] >= polAABB[0][0] && point[0] <= polAABB[1][0]
@@ -95,7 +98,7 @@ function hitBvh(point) {
 }
 
 
-function getTimezoneId(point) {
+function getTimezonePolygon(point) {
   const candidatePolygons = hitBvh(point)
 
   // load the necessar  y polygons
@@ -110,7 +113,7 @@ function getTimezoneId(point) {
     .filter((p) => pointInPolygon(p.polygon, point) < 1)
 
   if (matches.length) {
-    return matches[0].tz
+    return matches[0]
   }
 
   return null
@@ -126,16 +129,25 @@ function getFormattedDate(formatter, date) {
 }
 
 
-export function getLocalTimeInfo(point, date = new Date()) {
+export function getLocalTimeInfo(point, options = {}) {
   decodePolygons()
+
+  const date = 'date' in options ? options.date : new Date()
+  const debug = !!options.debug
 
   const datePlusOneDay = new Date()
   datePlusOneDay.setUTCDate(date.getUTCDate() + 1)
   const dateMinusOneDay = new Date()
   dateMinusOneDay.setUTCDate(date.getUTCDate() - 1)
 
-  const tz = getTimezoneId(point)
-  const datetimeFormatter = new Intl.DateTimeFormat('en-ca', {timeZone: tz, year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false, timeZoneName: 'short'})
+  const tzPolygon = getTimezonePolygon(point)
+
+  if (!tzPolygon) {
+    return null
+  }
+
+  const tz = tzPolygon.tz
+  const datetimeFormatter = new Intl.DateTimeFormat('en-ca', { timeZone: tz, year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false, timeZoneName: 'short'})
   const datetime = datetimeFormatter.format(date)
   const sunTimes = SunCalc.getTimes(date, point[1], point[0])
 
@@ -186,7 +198,7 @@ export function getLocalTimeInfo(point, date = new Date()) {
   })
 
 
-  return {
+  const retObj = {
     lonLat: point,
     timezone: tz,
     unixTimestamp: date.getTime() / 1000,
@@ -214,4 +226,10 @@ export function getLocalTimeInfo(point, date = new Date()) {
       },
     },
   }
+
+  if (debug) {
+    retObj.timezonePolygon = tzPolygon
+  }
+
+  return retObj
 }
