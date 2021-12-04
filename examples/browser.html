@@ -48,8 +48,8 @@
       />
     </p>
     
+    Move the pointer on the map to print te timezone info. Click to show debug polygons.
     <div id="mapContainer">
-      <
     </div>
     <textarea id="payloadContainer"></textarea>
   </div>
@@ -247,7 +247,7 @@
           movingNode = movingNode.parent
         }
 
-        const boxes = nodeList.forEach((n, i)=> {
+        nodeList.forEach((n, i)=> {
           const box = n.b
           const boxCoords = equirectangularProjectionForward([
             [box[0][0], box[0][1]],
@@ -264,7 +264,15 @@
 
           debugGroup.appendChild(p)
         })
-        console.log(boxes)
+        
+        const tzPolygonScreenSpace = equirectangularProjectionForward(tzInfo.timezonePolygon.polygon)
+        const p = polygon(tzPolygonScreenSpace, {
+          fillColor: '#00000000',
+          strokeWidth: 2,
+          strokeColor: '#FF0000',
+        })
+
+        debugGroup.appendChild(p)
       })
 
 
