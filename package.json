@@ -1,6 +1,6 @@
 {
   "name": "timezoneturbo",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "A boosted, lightweight, whole-globe, high precision, spatial lookup for timezone and local time (plus ☀️ 🌙)",
   "repository": "jonathanlurie/timezoneturbo",
   "main": "dist/timezoneturbo.cjs.js",

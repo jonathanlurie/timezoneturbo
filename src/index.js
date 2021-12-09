@@ -167,9 +167,9 @@ export function getLocalTimeInfo(point, options = {}) {
 
   const sunTimesPlus = SunCalc.getTimes(datePlusOneDay, point[1], point[0])
 
-  Object.keys(datePlusOneDay).forEach((k) => {
-    if (datePlusOneDay[k] instanceof Date) {
-      datePlusOneDay[k] = getFormattedDate(datetimeFormatter, datePlusOneDay[k])
+  Object.keys(sunTimesPlus).forEach((k) => {
+    if (sunTimesPlus[k] instanceof Date) {
+      sunTimesPlus[k] = getFormattedDate(datetimeFormatter, sunTimesPlus[k])
     }
   })
 
