@@ -87,7 +87,6 @@ function hitBvh(point) {
   return candidatePolygons
 }
 
-
 function getTimezonePolygon(point) {
   const candidatePolygons = hitBvh(point)
 

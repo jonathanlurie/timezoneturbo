@@ -3,7 +3,7 @@
 **TimezoneTurbo can be used both in browser and on Node.**  
 
 # What's TimezoneTurbo?
-It's a fast geographical lookup of timezones for clientside purpose. The package is about 4MB, which may seem fairly large but it includes high precision encoded polygons of every single timezone on Earth!
+It's a fast geographical lookup of timezones for clientside purpose. The package is about 4MB (or 2.8MB gzipped), which may seem fairly large but it includes high precision encoded polygons of every single timezone on Earth!
 
 TimezoneTurbo lookup is fast (usually less than 3ms per lookup) and gives you extra information about the local coordinates:
 - Time zone ID
@@ -171,4 +171,36 @@ const tzData = getLocalTimeInfo(coordinates, {date: d})
 
 
 # Data generation
-If you are curious about how the data fueling TimezoneTurbo were generated, have a look at [this repo](https://github.com/jonathanlurie/geodatapreparation).
+If you are curious about how the data fueling TimezoneTurbo were generated, have a look at [this repo](https://github.com/jonathanlurie/geodatapreparation). Or just continue reading.
+
+
+## How is the timezone data prepared?
+Timezone data is actually polygons of all shapes and sizes that represent teritories on Earth. As a general rule, each country has it's own timezone polygons (more than one for the largest countries or those with overseas territories). These timezone polygons are roughly delimitted by political border, the only exception being coatal areas, where the timezone polygons goes a bit beyond the terestrial zone. Those timezones usualy have an ID that is composed of the name of the continent and the major political city, for example `Europe/Paris` or `America/Los_Angeles` and in some minor case, the country is included (mostly in South America): `America/Argentina/Buenos_Aires`. Then, there are also timezones for large waterbodies such as international waters. Since those do not belong to any political entity and are not impacted by DST, they are just called with the shift to GMT. Example: `Etc/GMT+7`. The grand total is 451 timezones and 1304 polygons.
+
+All the timezone polygons used in TimezoneTurbo are borrowed from the project [timezone-boundary-builder](https://github.com/evansiroky/timezone-boundary-builder) and are originaly serialized into JSON format.  
+
+Those polygons are of a fairly high definition, to high to be easily portable and/or loaded in one bulk in the browser (~44MB). For this reason, I've decided to simplify the lines using a [Douglas-Peucker methods](https://github.com/mourner/simplify-js).  
+
+As an example, this is what 5km of France-Switzerland border look like in the original package:
+![](images/fr-ch-high.png)  
+
+And how it looks like when simplified:
+![](images/fr-ch-low.png)  
+
+Yet, we are still having a decent spatial precision. I've tried many downsampling tolerance distances and this one was a good middleground, allowing for having the entire world in under 3MB including all the fast lookup spatial structures.  
+
+Once simplified, some polygons become so small that there area becomes 0. We don't keep those.
+
+## How to reach under 3MB?
+Fist, I have decided not to deal with holes in timezone polygons and I am actually not even sure there are any, since timezones to countries is not a 1-to-1 relationship and it would make little sense (though, this may happen, mainly for polytical reasons). The other reason to not deal with holes is that it simplifies greatly the datastructure: one timezone composed of N polygons is just N binary buffers containing little endian `float32` as follow: `lon1 lat1 lon2 lat2 ... lonN latN lon1 lat1`. No header, no metadata, just the bare minimum, we know how many points there are in the buffer as follow: `bufferByteSize / 8` (divide by 4 because a float32 takes 4 bytes and then again by 2 because we need two number for one coordinate). I also found that zipping was not worth because most of these polygons are fairly small but with hardly any number repetition, hence resulting in a poor compression ratio and the overhead of storing compression metadata was eventualy just making larger buffers.  
+
+Once the polygon buffers are prepared, they are encoded from JSON array to `Float32Array`, then to `ArrayBuffer` and finaly encoded into `base64` strings. The advantage of using `base64` is that it's much more compact than regular JSON numerical arrays and since `base64` buffers are still strings, we can make it part of the JS bundle. The cons is that `base64` is still about 35% larger than its binary equivalent (that's alright imo) and that it's not human readable anymore, but honnestly I was not going to spend too much time reading timezone polygons anyways.
+
+## Bounding boxes and Bounding Volume Hierarchy
+In addition to storing timezone polygons as `base64` strings, we also want to prepare a way to quickly look up a lon/lat coordinate without having to test each and every polygon, because remember, 1304 polygons means an average of 652 tests before we find the right one. That's quite a lot of tests. The solution is well known from game developers and computer graphics people, it is called an "accelerating structure". I have decided to develelop my own 2D [bounding volume hierarchy ("BVH")](https://en.wikipedia.org/wiki/Bounding_volume_hierarchy) to obtain a super fast spatial lookup where, at first, all the polygons are represented only by their axis-aligned bounding-box ("AABB"). A hit test such as "is this point inside that AABB?" is much faster than performing a test with a complex polygon, and in the end, only a 3 AABB or less will be hitting the point. Only then, we can go for a full featured complex polygon test and there can be only one.  
+The top-down approach of hit test on a BVH makes it so that, very quickly, many branches of the BVH tree are being discarded so that in the end, what was supposed to be 600+ test becomes 10 or 11, so almost a *O(log n)*, since AABB can overlap.
+
+The BVH is also serialize into JSON and made part of the JS bundle.
+
+## How is it used?
+The BVH tree being serialized into the bundle, it is used as any native JS oject. The polygon data, encoded in `base64` strings, are only decoded and cached as proper numerical array on-demand, meaning when their timezone bounding box is intersected. The average polygon is decoded in about 1ms and with caching, this happens only once per timmezone.
