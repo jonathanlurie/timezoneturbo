@@ -1,8 +1,10 @@
-const es6module = require("..");
+console.time('t')
+const timezoneturbo = require('..')
 
-var foo = new es6module.Foo(20, 30);
-
-// do something with foo
-foo.printAnAttribute();
-foo.setAnAttribute(34)
-foo.printAnAttribute();
+const coordinates = [
+  1.7224880382775285, // longitude
+  47.51196172248804, // latitude
+]
+const tzData = timezoneturbo.getLocalTimeInfo(coordinates)
+console.timeEnd('t')
+console.log(tzData)

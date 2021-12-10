@@ -3,7 +3,9 @@ import SunCalc from 'suncalc'
 import bvh from '../data/bvh.json'
 import base64Polygons from '../data/base64Polygons.json'
 
-let tzData = null
+const IS_NODE = typeof window === 'undefined'
+const tzData = {}
+
 
 function groupByPairs(polygonStreamline) {
   const polygon = []
@@ -17,37 +19,25 @@ function groupByPairs(polygonStreamline) {
 }
 
 
-function decodePolygons() {
-  if (tzData) {
+function decodeTzPolygons(tzId) {
+  if (tzData[tzId]) {
     return
   }
 
-  tzData = {}
-  const tzIds = Object.keys(base64Polygons)
+  const polygonsB64 = base64Polygons[tzId]
+  tzData[tzId] = []
 
-  for (let i = 0; i < tzIds.length; i += 1) {
-    const tzId = tzIds[i]
-    const polygonsB64 = base64Polygons[tzId]
-    tzData[tzId] = []
-
-    for (let j = 0; j < polygonsB64.length; j += 1) {
-      const polygonStreamline = new Float32Array((new Uint8Array(Array.from(atob(polygonsB64[j])).map((char) => char.charCodeAt(0)))).buffer)
-      const polygon = groupByPairs(polygonStreamline)
-      tzData[tzId].push(polygon)
+  for (let j = 0; j < polygonsB64.length; j += 1) {
+    let polygonStreamline = null
+    if (IS_NODE) {
+      polygonStreamline = new Float32Array((new Buffer(polygonsB64[j], 'base64')).buffer)
+    } else {
+      polygonStreamline = new Float32Array((new Uint8Array(Array.from(atob(polygonsB64[j])).map((char) => char.charCodeAt(0)))).buffer)
     }
+
+    const polygon = groupByPairs(polygonStreamline)
+    tzData[tzId].push(polygon)
   }
-}
-
-
-try {
-  decodePolygons()
-} catch(e) {
-  // nothing
-}
-
-
-export function getAllPolygons() {
-  return tzData
 }
 
 
@@ -104,6 +94,7 @@ function getTimezonePolygon(point) {
   // load the necessar  y polygons
   for (let i = 0; i < candidatePolygons.length; i += 1) {
     const p = candidatePolygons[i]
+    decodeTzPolygons(p.tz)
     p.polygon = tzData[p.tz][p.i]
   }
 
@@ -130,8 +121,6 @@ function getFormattedDate(formatter, date) {
 
 
 export function getLocalTimeInfo(point, options = {}) {
-  decodePolygons()
-
   const date = 'date' in options ? options.date : new Date()
   const debug = !!options.debug
 
@@ -196,7 +185,6 @@ export function getLocalTimeInfo(point, options = {}) {
       moonTimesPlus[k] = getFormattedDate(datetimeFormatter, moonTimesPlus[k])
     }
   })
-
 
   const retObj = {
     lonLat: point,

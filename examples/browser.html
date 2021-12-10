@@ -33,7 +33,7 @@
 </head>
 <body>
   <!-- importing the automatically build module -->
-  <script src="../dist/timezoneturbo.umd.js"></script>
+  <script src="../dist/timezoneturbo.umd.min.js"></script>
 
   <!-- The minified version is also accessible -->
   <!-- <script src="../dist/timezoneturbo.umd.min.js"></script> -->
@@ -56,7 +56,7 @@
   
 
   <script>
-
+    console.log(timezoneturbo);
     const SVG_NAMESPACE = 'http://www.w3.org/2000/svg'
 
     function polygon(points, options = {}) {
@@ -284,6 +284,7 @@
         const t0 = performance.now()
         const tzInfo = timezoneturbo.getLocalTimeInfo(lonLat)
         const t1 = performance.now()
+        // console.log(t1 - t0, 'ms to find tz');
 
         if (!tzInfo) {
           return

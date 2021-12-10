@@ -1,6 +1,6 @@
 ![](images/logo_1000.png)
 
-Thi is the browser version. Looking for the Node.js version? [HERE!](https://github.com/jonathanlurie/timezoneturbonode)  
+**TimezoneTurbo can be used both in browser and on Node.**  
 
 # What's TimezoneTurbo?
 It's a fast geographical lookup of timezones for clientside purpose. The package is about 4MB, which may seem fairly large but it includes high precision encoded polygons of every single timezone on Earth!
@@ -18,6 +18,7 @@ npm install timezoneturbo
 
 
 # Usage
+As ES6 module:  
 ```js
 import { getLocalTimeInfo } from 'timezoneturbo'
 
@@ -27,9 +28,40 @@ const coordinates = [
   47.51196172248804, // latitude
 ]
 
-const info = getLocalTimeInfo(coordinates)
+const tzData = getLocalTimeInfo(coordinates)
 ```
 
+In Node/CJS:  
+```js
+const getLocalTimeInfo = require('timezoneturbo').getLocalTimeInfo
+
+// WGS84 coordinates
+const coordinates = [
+  1.7224880382775285, // longitude
+  47.51196172248804, // latitude
+]
+
+const tzData = getLocalTimeInfo(coordinates)
+```
+
+In regular HTML:
+```html
+<script src="./dist/timezoneturbo.umd.js"></script>
+<!-- Alternatively, use the minified version: -->
+<!-- <script src="./dist/timezoneturbo.umd.min.js"></script> -->
+
+<script>
+  // WGS84 coordinates
+  const coordinates = [
+    1.7224880382775285, // longitude
+    47.51196172248804, // latitude
+  ]
+
+  const tzData = timezoneturbo.getLocalTimeInfo(lonLat)
+</script>
+```
+
+The resulting `tzData` object contains:  
 ```json
 {
   "lonLat": [
@@ -125,6 +157,18 @@ const info = getLocalTimeInfo(coordinates)
   }
 }
 ```
+The lunar and solar informations are computed by [@mourner](https://twitter.com/mourner)'s [Suncalc](https://github.com/mourner/suncalc). I thought it was a nice addition.
+
+By default, TimezoneTurbo uses the current date, but a **custom date** can also be provided:   
+```js
+// A date with a timezone info
+const d = new Date('1985-01-27, 12:18:28 GMT+1')
+
+// Location near NYC, not in GMT+1
+const coordinates = [-75.50239234449762, 37.75119617224882]
+const tzData = getLocalTimeInfo(coordinates, {date: d})
+```
+
 
 # Data generation
 If you are curious about how the data fueling TimezoneTurbo were generated, have a look at [this repo](https://github.com/jonathanlurie/geodatapreparation).
