@@ -1,44 +1,60 @@
 import pointInPolygon from 'robust-point-in-polygon'
-import SunCalc from 'suncalc'
+import * as topojson from 'topojson-client'
 import bvh from '../data/bvh.json'
-import base64Polygons from '../data/base64Polygons.json'
+import topoData from '../data/countries-10m.json'
 
-const IS_NODE = typeof window === 'undefined'
-const tzData = {}
-
-
-function groupByPairs(polygonStreamline) {
-  const polygon = []
-  for (let k = 0; k < polygonStreamline.length; k += 2) {
-    polygon.push([
-      polygonStreamline[k],
-      polygonStreamline[k + 1],
-    ])
-  }
-  return polygon
-}
+console.log('bvh ', bvh)
+const countriesPolygons = {}
 
 
-function decodeTzPolygons(tzId) {
-  if (tzData[tzId]) {
-    return
-  }
+function decodePolygons() {
+  const countries = topojson.feature(topoData, topoData.objects.countries)
 
-  const polygonsB64 = base64Polygons[tzId]
-  tzData[tzId] = []
+  console.log(countries);
 
-  for (let j = 0; j < polygonsB64.length; j += 1) {
-    let polygonStreamline = null
-    if (IS_NODE) {
-      polygonStreamline = new Float32Array((new Buffer(polygonsB64[j], 'base64')).buffer)
-    } else {
-      polygonStreamline = new Float32Array((new Uint8Array(Array.from(atob(polygonsB64[j])).map((char) => char.charCodeAt(0)))).buffer)
+  for (let i = 0; i < countries.features.length; i += 1) {
+    let polygonCounter = 0 // some polygons have a 0 area so we cannot rely solely in i
+    const feature = countries.features[i]
+    const geometry = feature.geometry
+    const id = feature.properties.name
+    const geometryType = geometry.type
+
+    if (geometryType !== 'Polygon' && geometryType !== 'MultiPolygon') {
+      continue
     }
 
-    const polygon = groupByPairs(polygonStreamline)
-    tzData[tzId].push(polygon)
+    // treating all polygons as if they were multipolygons
+    // because it makes the next part easier
+    const polygons = geometryType === 'Polygon' ? [geometry.coordinates[0]] : geometry.coordinates.map(el => el[0])
+
+    countriesPolygons[id] = polygons
+    // for (let p = 0; p < polygons.length; p += 1) {
+    //   const polygon = polygons[p]
+    // }
+
+    // some Russian polygons are traversing to the other side of the globe creating artifact.
+    // This seems to be due to the conversion from topjson to geojson
+    // if meridian side is 1, then -180 should be replaced by 180
+    // if meridian side is -1, then 180 should be replaced by -180
+    if (id === 'Russia') {
+      polygons.forEach((polygon) => {
+        const meridianSide = Math.sign(polygon.reduce((acc, lonLat) => acc + lonLat[0] / polygon.length, 0))
+        for (let j = 0; j < polygon.length; j += 1) {
+          const lon = polygon[j][0]
+          if (lon === -180 && meridianSide === 1) {
+            polygon[j][0] = 180
+          } else if (lon === 180 && meridianSide === -1) {
+            polygon[j][0] = -180
+          }
+        }
+      })
+    }
   }
 }
+
+console.time('decode countries')
+decodePolygons()
+console.timeEnd('decode countries')
 
 
 function hitBvh(point) {
@@ -87,136 +103,22 @@ function hitBvh(point) {
   return candidatePolygons
 }
 
-function getTimezonePolygon(point) {
+function getCountryPolygon(point) {
   const candidatePolygons = hitBvh(point)
 
-  // load the necessar  y polygons
   for (let i = 0; i < candidatePolygons.length; i += 1) {
     const p = candidatePolygons[i]
-    decodeTzPolygons(p.tz)
-    p.polygon = tzData[p.tz][p.i]
-  }
-
-  // if some could not be loaded, delete those
-  const matches = candidatePolygons
-    .filter((p) => p.polygon)
-    .filter((p) => pointInPolygon(p.polygon, point) < 1)
-
-  if (matches.length) {
-    return matches[0]
+    const polygon = countriesPolygons[p.id][p.i]
+    if (pointInPolygon(polygon, point) < 1) {
+      return p
+    }
   }
 
   return null
 }
 
 
-function getFormattedDate(formatter, date) {
-  if (!isFinite(date)) {
-    return null
-  }
-
-  return formatter.format(date)
-}
-
-
-export function getLocalTimeInfo(point, options = {}) {
-  const date = 'date' in options ? options.date : new Date()
-  const debug = !!options.debug
-
-  const datePlusOneDay = new Date()
-  datePlusOneDay.setUTCDate(date.getUTCDate() + 1)
-  const dateMinusOneDay = new Date()
-  dateMinusOneDay.setUTCDate(date.getUTCDate() - 1)
-
-  const tzPolygon = getTimezonePolygon(point)
-
-  if (!tzPolygon) {
-    return null
-  }
-
-  const tz = tzPolygon.tz
-  const datetimeFormatter = new Intl.DateTimeFormat('en-ca', { timeZone: tz, year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false, timeZoneName: 'short'})
-  const datetime = datetimeFormatter.format(date)
-  const sunTimes = SunCalc.getTimes(date, point[1], point[0])
-
-  Object.keys(sunTimes).forEach((k) => {
-    if (sunTimes[k] instanceof Date) {
-      sunTimes[k] = getFormattedDate(datetimeFormatter, sunTimes[k])
-    }
-  })
-
-  const sunTimesMinus = SunCalc.getTimes(dateMinusOneDay, point[1], point[0])
-
-  Object.keys(sunTimesMinus).forEach((k) => {
-    if (sunTimesMinus[k] instanceof Date) {
-      sunTimesMinus[k] = getFormattedDate(datetimeFormatter, sunTimesMinus[k])
-    }
-  })
-
-  const sunTimesPlus = SunCalc.getTimes(datePlusOneDay, point[1], point[0])
-
-  Object.keys(sunTimesPlus).forEach((k) => {
-    if (sunTimesPlus[k] instanceof Date) {
-      sunTimesPlus[k] = getFormattedDate(datetimeFormatter, sunTimesPlus[k])
-    }
-  })
-
-  const moonTimes = SunCalc.getMoonTimes(date, point[1], point[0])
-
-  Object.keys(moonTimes).forEach((k) => {
-    if (moonTimes[k] instanceof Date) {
-      moonTimes[k] = getFormattedDate(datetimeFormatter, moonTimes[k])
-    }
-  })
-
-  const moonTimesMinus = SunCalc.getMoonTimes(dateMinusOneDay, point[1], point[0])
-
-  Object.keys(moonTimesMinus).forEach((k) => {
-    if (moonTimesMinus[k] instanceof Date) {
-      moonTimesMinus[k] = getFormattedDate(datetimeFormatter, moonTimesMinus[k])
-    }
-  })
-
-  const moonTimesPlus = SunCalc.getMoonTimes(datePlusOneDay, point[1], point[0])
-
-  Object.keys(moonTimesPlus).forEach((k) => {
-    if (moonTimesPlus[k] instanceof Date) {
-      moonTimesPlus[k] = getFormattedDate(datetimeFormatter, moonTimesPlus[k])
-    }
-  })
-
-  const retObj = {
-    lonLat: point,
-    timezone: tz,
-    unixTimestamp: date.getTime() / 1000,
-    localTime: datetime,
-    sun: {
-      previousDay: sunTimesMinus,
-      currentDay: sunTimes,
-      nextDay: sunTimesPlus,
-    },
-    moon: {
-      previousDay: {
-        ...moonTimesMinus,
-        ...SunCalc.getMoonIllumination(dateMinusOneDay),
-        ...SunCalc.getMoonPosition(dateMinusOneDay, point[1], point[0]),
-      },
-      currentDay: {
-        ...moonTimes,
-        ...SunCalc.getMoonIllumination(date),
-        ...SunCalc.getMoonPosition(date, point[1], point[0]),
-      },
-      nextDay: {
-        ...moonTimesPlus,
-        ...SunCalc.getMoonIllumination(datePlusOneDay),
-        ...SunCalc.getMoonPosition(datePlusOneDay, point[1], point[0]),
-      },
-    },
-  }
-
-  if (debug) {
-    retObj.timezonePolygon = tzPolygon
-  }
-
-  return retObj
+export function getCountry(point) {
+  const matchPolygon = getCountryPolygon(point)
+  return matchPolygon ? matchPolygon.id : null
 }

@@ -27,16 +27,16 @@
     #payloadContainer {
       margin-top: 10px;
       width: 100%;
-      height: 1000px;
+      text-align: center;
     }
   </style>
 </head>
 <body>
   <!-- importing the automatically build module -->
-  <script src="../dist/timezoneturbo.umd.min.js"></script>
+  <script src="../dist/countrylookupturbo.umd.js"></script>
 
   <!-- The minified version is also accessible -->
-  <!-- <script src="../dist/timezoneturbo.umd.min.js"></script> -->
+  <!-- <script src="../dist/countrylookupturbo.umd.min.js"></script> -->
 
   <div id="container">
     <p
@@ -48,7 +48,6 @@
       />
     </p>
     
-    Move the pointer on the map to print te timezone info. Click to show debug polygons.
     <div id="mapContainer">
     </div>
     <textarea id="payloadContainer"></textarea>
@@ -56,7 +55,7 @@
   
 
   <script>
-    console.log(timezoneturbo);
+    console.log(countrylookupturbo);
     const SVG_NAMESPACE = 'http://www.w3.org/2000/svg'
 
     function polygon(points, options = {}) {
@@ -221,82 +220,20 @@
 
       let lonLat = null
 
-
-      canvas.addEventListener('mousedown', async (evt) => {
-
-        canvas.removeChild(debugGroup)
-        debugGroup = document.createElementNS(SVG_NAMESPACE, 'g')
-        canvas.appendChild(debugGroup)
-
-        // console.log(evt);
-        const tzInfo = timezoneturbo.getLocalTimeInfo(lonLat, { debug: true })
-
-        if (!tzInfo) {
-          return
-        }
-
-
-
-        console.log(tzInfo)
-        const timezonePolygon = tzInfo.timezonePolygon
-        const nodeList = [timezonePolygon.parentNode]
-        let movingNode = timezonePolygon.parentNode
-
-        while (movingNode.parent) {
-          nodeList.push(movingNode.parent)
-          movingNode = movingNode.parent
-        }
-
-        nodeList.forEach((n, i)=> {
-          const box = n.b
-          const boxCoords = equirectangularProjectionForward([
-            [box[0][0], box[0][1]],
-            [box[1][0], box[0][1]],
-            [box[1][0], box[1][1]],
-            [box[0][0], box[1][1]],
-          ])
-
-          const p = polygon(boxCoords, {
-              fillColor: '#00000000',
-              strokeWidth: i,
-              strokeColor: '#FF000044',
-            })
-
-          debugGroup.appendChild(p)
-        })
-        
-        const tzPolygonScreenSpace = equirectangularProjectionForward(tzInfo.timezonePolygon.polygon)
-        const p = polygon(tzPolygonScreenSpace, {
-          fillColor: '#00000000',
-          strokeWidth: 2,
-          strokeColor: '#FF0000',
-        })
-
-        debugGroup.appendChild(p)
-      })
-
-
       canvas.addEventListener('mousemove', async (evt) => {
         // console.log(evt);
         const x = (evt.layerX / canvas.clientWidth) * width
         const y = (evt.layerY / canvas.clientHeight) * height
         lonLat = equirectangularProjectionReverse([x, y])
         const t0 = performance.now()
-        const tzInfo = timezoneturbo.getLocalTimeInfo(lonLat)
+        const country = countrylookupturbo.getCountry(lonLat)
         const t1 = performance.now()
-        // console.log(t1 - t0, 'ms to find tz');
-
-        if (!tzInfo) {
-          return
-        }
-        payloadContainer.value = JSON.stringify(tzInfo, null, 2)
+        const t = t1 - t0
+        payloadContainer.value = `${country} (match in ${t.toFixed(3)}ms)`
       })
     }
 
     init()
-
-    const info = timezoneturbo.getLocalTimeInfo([1.7999, 46.4400])
-    console.log(info);
 
   </script>
 
