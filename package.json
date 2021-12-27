@@ -1,11 +1,11 @@
 {
-  "name": "countrylookupturbo",
-  "version": "1.0.0",
-  "description": "A boosted, lightweight, whole-globe, 10 meter precision, spatial lookup for countries – Browser and Node",
-  "repository": "jonathanlurie/countrylookupturbo",
-  "main": "dist/countrylookupturbo.cjs.js",
-  "module": "dist/countrylookupturbo.es.js",
-  "browser": "dist/countrylookupturbo.umd.js",
+  "name": "timezoneturbo",
+  "version": "1.1.0",
+  "description": "A boosted, lightweight, whole-globe, high precision, spatial lookup for timezone and local time (plus ☀️ 🌙) – Browser and Node",
+  "repository": "jonathanlurie/timezoneturbo",
+  "main": "dist/timezoneturbo.cjs.js",
+  "module": "dist/timezoneturbo.es.js",
+  "browser": "dist/timezoneturbo.umd.js",
   "entry": "src/index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
@@ -61,7 +61,6 @@
   },
   "dependencies": {
     "robust-point-in-polygon": "^1.0.3",
-    "suncalc": "^1.8.0",
-    "topojson-client": "^3.1.0"
+    "suncalc": "^1.8.0"
   }
 }

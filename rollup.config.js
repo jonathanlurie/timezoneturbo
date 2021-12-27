@@ -25,7 +25,7 @@ const configurations = [
       format: 'umd',
     },
     plugins: [
-      json({exclude: [ 'node_modules/**' ]}),
+      json(),
       resolve(),
       commonjs({ include: 'node_modules/**' }),
       globals(),
@@ -33,49 +33,49 @@ const configurations = [
     ],
   },
 
-  // // ESMODULE
-  // {
-  //   input: pkg.entry,
-  //   output: {
-  //     file: pkg.module,
-  //     name: packageName,
-  //     sourcemap: true,
-  //     format: 'es',
-  //   },
-  //   external: [
-  //     ...Object.keys(pkg.dependencies || {}),
-  //   ],
-  //   plugins: [
-  //     json(),
-  //     resolve(),
-  //     commonjs({ include: 'node_modules/**' }),
-  //     globals(),
-  //     builtins(),
-  //   ],
-  // },
+  // ESMODULE
+  {
+    input: pkg.entry,
+    output: {
+      file: pkg.module,
+      name: packageName,
+      sourcemap: true,
+      format: 'es',
+    },
+    external: [
+      ...Object.keys(pkg.dependencies || {}),
+    ],
+    plugins: [
+      json(),
+      resolve(),
+      commonjs({ include: 'node_modules/**' }),
+      globals(),
+      builtins(),
+    ],
+  },
 
 
-  // // CJS
-  // {
-  //   input: pkg.entry,
-  //   output: {
-  //     file: pkg.main,
-  //     name: packageName,
-  //     sourcemap: true,
-  //     format: 'cjs',
-  //   },
-  //   external: [
-  //     ...Object.keys(pkg.dependencies || {}),
-  //   ],
+  // CJS
+  {
+    input: pkg.entry,
+    output: {
+      file: pkg.main,
+      name: packageName,
+      sourcemap: true,
+      format: 'cjs',
+    },
+    external: [
+      ...Object.keys(pkg.dependencies || {}),
+    ],
 
-  //   plugins: [
-  //     json(),
-  //     resolve(),
-  //     commonjs({ include: 'node_modules/**' }),
-  //     globals(),
-  //     builtins(),
-  //   ],
-  // },
+    plugins: [
+      json(),
+      resolve(),
+      commonjs({ include: 'node_modules/**' }),
+      globals(),
+      builtins(),
+    ],
+  },
 
 ]
 
